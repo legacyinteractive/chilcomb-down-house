@@ -1,21 +1,14 @@
 # Chilcomb Down House
 
-New Cloudflare Worker website for Chilcomb Down House, Winchester.
+Cloudflare Worker website for Chilcomb Down House, Winchester.
 
 ## Deployment
 
-The production Worker is named `chilcomb-down-house`. Connect this repository to the existing Worker in Cloudflare under **Settings → Build**.
+Production branch: `main`
 
-Use:
+Deploy command: `npx wrangler deploy`
 
-- Production branch: `main`
-- Build command: leave blank
-- Deploy command: `npx wrangler deploy`
-- Root directory: repository root
-
-Every push to `main` will then trigger a Cloudflare Workers Build and deployment.
-
-## Preview health check
+## Health check
 
 `/api/health`
 
