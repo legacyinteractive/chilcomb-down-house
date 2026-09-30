@@ -41,7 +41,7 @@ jobs:
         env:
           SHARE_URL: https://firestorage.ai/ja/f/I_josvEliu_P
         run: |
-          cat > /tmp/download-assets.cjs <<'NODE'
+          cat > download-assets.cjs <<'NODE'
           const { chromium } = require('playwright');
           const fs = require('fs');
 
@@ -53,49 +53,49 @@ jobs:
             await page.goto(process.env.SHARE_URL, {waitUntil:'domcontentloaded', timeout:90000});
             await page.waitForTimeout(4000);
 
-            const cookieWords = /accept|agree|同意|許可|すべて許可/i;
             const controls = page.locator('button, a');
+            const cookieWords = /accept|agree|同意|許可|すべて許可/i;
+
             for (let i = 0; i < Math.min(await controls.count(), 100); i++) {
               const el = controls.nth(i);
-              const text = ((await el.innerText().catch(()=>'')) || '').trim();
-              if (cookieWords.test(text)) {
+              const label = ((await el.innerText().catch(()=>'')) || '').trim();
+              if (cookieWords.test(label)) {
                 await el.click({timeout:3000}).catch(()=>{});
                 await page.waitForTimeout(1000);
                 break;
               }
             }
 
-            let candidates = [];
+            const candidates = [];
             const count = await controls.count();
             for (let i = 0; i < Math.min(count, 200); i++) {
               const el = controls.nth(i);
-              const text = ((await el.innerText().catch(()=>'')) || '').trim();
+              const label = ((await el.innerText().catch(()=>'')) || '').trim();
               const href = await el.getAttribute('href').catch(()=>null);
-              if (/download|ダウンロード|保存/i.test(text) || /download/i.test(href || '')) {
-                candidates.push({i,text,href});
+              if (/download|ダウンロード|保存/i.test(label) || /download/i.test(href || '')) {
+                candidates.push({i,label,href});
               }
             }
-            console.log('Download candidates:', JSON.stringify(candidates));
 
+            console.log('Download candidates:', JSON.stringify(candidates));
             if (!candidates.length) {
               console.log('Page text:', (await page.locator('body').innerText()).slice(0,12000));
               throw new Error('No download control found');
             }
 
             let saved = false;
-            for (const c of candidates) {
-              const el = controls.nth(c.i);
+            for (const candidate of candidates) {
+              const el = controls.nth(candidate.i);
               try {
-                const downloadPromise = page.waitForEvent('download', {timeout:15000});
+                const downloadPromise = page.waitForEvent('download', {timeout:20000});
                 await el.click({timeout:5000});
                 const download = await downloadPromise;
                 await download.saveAs('/tmp/chilcomb-photo-assets.zip');
-                console.log('Saved download:', await download.suggestedFilename());
+                console.log('Saved:', await download.suggestedFilename());
                 saved = true;
                 break;
-              } catch (e) {
-                console.log('Candidate failed:', c.text, String(e));
-                await page.goBack({waitUntil:'domcontentloaded', timeout:15000}).catch(()=>{});
+              } catch (err) {
+                console.log('Candidate failed:', candidate.label, String(err));
               }
             }
 
@@ -105,7 +105,7 @@ jobs:
             }
           })();
           NODE
-          node /tmp/download-assets.cjs
+          node download-assets.cjs
 
       - name: Install assets
         if: steps.check.outputs.done != 'true'
